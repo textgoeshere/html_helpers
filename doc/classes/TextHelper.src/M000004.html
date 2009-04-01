@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+<head>
+  <title>truncate_html (TextHelper)</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <link rel="stylesheet" href="../.././rdoc-style.css" type="text/css" media="screen" />
+</head>
+<body class="standalone-code">
+  <pre><span class="ruby-comment cmt"># File truncate.rb, line 58</span>
+  <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">truncate_html</span>(<span class="ruby-identifier">text</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>)
+    <span class="ruby-keyword kw">return</span> <span class="ruby-value str">''</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">text</span>.<span class="ruby-identifier">blank?</span>
+    
+    <span class="ruby-identifier">options</span> = <span class="ruby-identifier">arguments</span>.<span class="ruby-identifier">extract_options!</span>
+    <span class="ruby-identifier">options</span>.<span class="ruby-identifier">reverse_merge!</span>(
+        <span class="ruby-identifier">:length</span>         =<span class="ruby-operator">&gt;</span> <span class="ruby-value">30</span>, 
+        <span class="ruby-identifier">:omission</span>       =<span class="ruby-operator">&gt;</span> <span class="ruby-value str">&quot;...&quot;</span>, 
+        <span class="ruby-identifier">:break_on_word</span>  =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">false</span>)
+    
+    <span class="ruby-identifier">doc</span> = <span class="ruby-constant">Hpricot</span>(<span class="ruby-identifier">text</span>.<span class="ruby-identifier">to_s</span>)
+    <span class="ruby-identifier">omission_length</span> = <span class="ruby-constant">Hpricot</span>(<span class="ruby-identifier">omission</span>).<span class="ruby-identifier">inner_text</span>.<span class="ruby-identifier">mb_chars</span>.<span class="ruby-identifier">length</span>
+    <span class="ruby-identifier">content_length</span> = <span class="ruby-identifier">doc</span>.<span class="ruby-identifier">inner_text</span>.<span class="ruby-identifier">mb_chars</span>.<span class="ruby-identifier">length</span>
+    <span class="ruby-identifier">actual_length</span> = <span class="ruby-identifier">length</span> <span class="ruby-operator">-</span> <span class="ruby-identifier">omission_length</span>
+
+    <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">content_length</span> <span class="ruby-operator">&gt;</span> <span class="ruby-identifier">length</span>
+      <span class="ruby-identifier">truncated_doc</span> = <span class="ruby-identifier">doc</span>.<span class="ruby-identifier">truncate</span>(<span class="ruby-identifier">actual_length</span>)
+      
+      <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">words</span>
+        <span class="ruby-identifier">word_length</span> = <span class="ruby-identifier">actual_length</span> <span class="ruby-operator">-</span> (<span class="ruby-identifier">truncated_doc</span>.<span class="ruby-identifier">inner_html</span>.<span class="ruby-identifier">chars</span>.<span class="ruby-identifier">length</span> <span class="ruby-operator">-</span> <span class="ruby-identifier">truncated_doc</span>.<span class="ruby-identifier">inner_html</span>.<span class="ruby-identifier">rindex</span>(<span class="ruby-value str">' '</span>))
+        <span class="ruby-identifier">truncated_doc</span> = <span class="ruby-identifier">doc</span>.<span class="ruby-identifier">truncate</span>(<span class="ruby-identifier">word_length</span>)
+      <span class="ruby-keyword kw">end</span>
+
+      <span class="ruby-identifier">last_child</span> = <span class="ruby-identifier">truncated_doc</span>.<span class="ruby-identifier">children</span>.<span class="ruby-identifier">last</span>
+      <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">last_child</span>.<span class="ruby-identifier">inner_html</span>.<span class="ruby-identifier">nil?</span>
+        <span class="ruby-identifier">truncated_doc</span>.<span class="ruby-identifier">inner_html</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">omission</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">options</span>[<span class="ruby-identifier">:link</span>] <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-identifier">:link</span>]
+      <span class="ruby-keyword kw">else</span>
+        <span class="ruby-identifier">last_child</span>.<span class="ruby-identifier">inner_html</span> = <span class="ruby-identifier">last_child</span>.<span class="ruby-identifier">inner_html</span>.<span class="ruby-identifier">gsub</span>(<span class="ruby-regexp re">/\W.[^\s]+$/</span>, <span class="ruby-value str">&quot;&quot;</span>) <span class="ruby-operator">+</span> <span class="ruby-identifier">omission</span>
+        <span class="ruby-identifier">last_child</span>.<span class="ruby-identifier">inner_html</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">options</span>[<span class="ruby-identifier">:link</span>] <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-identifier">:link</span>]
+        <span class="ruby-identifier">truncated_doc</span>
+      <span class="ruby-keyword kw">end</span>
+    <span class="ruby-keyword kw">else</span> 
+      <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-identifier">:link</span>]
+        <span class="ruby-identifier">last_child</span> = <span class="ruby-identifier">doc</span>.<span class="ruby-identifier">children</span>.<span class="ruby-identifier">last</span>
+        <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">last_child</span>.<span class="ruby-identifier">inner_html</span>.<span class="ruby-identifier">nil?</span>
+          <span class="ruby-identifier">doc</span>.<span class="ruby-identifier">inner_html</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">options</span>[<span class="ruby-identifier">:link</span>]
+        <span class="ruby-keyword kw">else</span>
+          <span class="ruby-identifier">last_child</span>.<span class="ruby-identifier">inner_html</span> = <span class="ruby-identifier">last_child</span>.<span class="ruby-identifier">inner_html</span>.<span class="ruby-identifier">gsub</span>(<span class="ruby-regexp re">/\W.[^\s]+$/</span>, <span class="ruby-value str">&quot;&quot;</span>) <span class="ruby-operator">+</span> <span class="ruby-identifier">options</span>[<span class="ruby-identifier">:link</span>]
+          <span class="ruby-identifier">doc</span>
+        <span class="ruby-keyword kw">end</span>      
+      <span class="ruby-keyword kw">else</span>
+        <span class="ruby-identifier">text</span>.<span class="ruby-identifier">to_s</span>
+      <span class="ruby-keyword kw">end</span>
+    <span class="ruby-keyword kw">end</span>
+  <span class="ruby-keyword kw">end</span></pre>
+</body>
+</html>

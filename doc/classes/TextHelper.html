@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Module: TextHelper</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta http-equiv="Content-Script-Type" content="text/javascript" />
+  <link rel="stylesheet" href=".././rdoc-style.css" type="text/css" media="screen" />
+  <script type="text/javascript">
+  // <![CDATA[
+
+  function popupCode( url ) {
+    window.open(url, "Code", "resizable=yes,scrollbars=yes,toolbar=no,status=no,height=150,width=400")
+  }
+
+  function toggleCode( id ) {
+    if ( document.getElementById )
+      elem = document.getElementById( id );
+    else if ( document.all )
+      elem = eval( "document.all." + id );
+    else
+      return false;
+
+    elemStyle = elem.style;
+    
+    if ( elemStyle.display != "block" ) {
+      elemStyle.display = "block"
+    } else {
+      elemStyle.display = "none"
+    }
+
+    return true;
+  }
+  
+  // Make codeblocks hidden by default
+  document.writeln( "<style type=\"text/css\">div.method-source-code { display: none }</style>" )
+  
+  // ]]>
+  </script>
+
+</head>
+<body>
+
+
+
+    <div id="classHeader">
+        <table class="header-table">
+        <tr class="top-aligned-row">
+          <td><strong>Module</strong></td>
+          <td class="class-name-in-header">TextHelper</td>
+        </tr>
+        <tr class="top-aligned-row">
+            <td><strong>In:</strong></td>
+            <td>
+                <a href="../files/truncate_rb.html">
+                truncate.rb
+                </a>
+        <br />
+            </td>
+        </tr>
+
+        </table>
+    </div>
+  <!-- banner header -->
+
+  <div id="bodyContent">
+
+
+
+  <div id="contextContent">
+
+
+
+   </div>
+
+    <div id="method-list">
+      <h3 class="section-bar">Methods</h3>
+
+      <div class="name-list">
+      <a href="#M000004">truncate_html</a>&nbsp;&nbsp;
+      </div>
+    </div>
+
+  </div>
+
+
+    <!-- if includes -->
+
+    <div id="section">
+
+
+
+
+
+      
+
+
+    <!-- if method_list -->
+    <div id="methods">
+      <h3 class="section-bar">Public Instance methods</h3>
+
+      <div id="method-M000004" class="method-detail">
+        <a name="M000004"></a>
+
+        <div class="method-heading">
+          <a href="TextHelper.src/M000004.html" target="Code" class="method-signature"
+            onclick="popupCode('TextHelper.src/M000004.html');return false;">
+          <span class="method-name">truncate_html</span><span class="method-args">(text, *args)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Returns a given <tt>text</tt> truncated after a given <tt>length</tt> if
+<tt>text</tt> is longer than <tt>length</tt> (defaults to 30). The last
+characters will be replaced with <tt>ommission</tt>.
+</p>
+<p>
+It&#8216;s just like the Rails <em>truncate</em> helper but doesn&#8216;t
+break HTML tags, entities, and optionally, words.
+</p>
+<h3>Options</h3>
+<ul>
+<li><tt>length</tt> - Maximum length of truncated <tt>text</tt>, including the
+length of <tt>ommission</tt> (default: 30)
+
+</li>
+<li><tt>ommission</tt> - Ellipsis, only present if <tt>text</tt> has actually
+been truncated (default: &#8217;&#8230;&#8217;).
+
+</li>
+<li><tt>break_on_word</tt> - <tt>true</tt> to ensure that <tt>text</tt> is
+truncated on a word boundary. Note this may mean that the length of the
+truncated text returned is less than <tt>length</tt> (default
+<tt>false</tt>)
+
+</li>
+<li><tt>coda</tt> - String that will be appended to <tt>text</tt> after
+truncation regardless of whether present regardless <tt>text</tt> is
+truncated or not (default: nil)
+
+</li>
+</ul>
+<p>
+link clean punctuation
+</p>
+<h3>Examples</h3>
+<pre>
+  truncate '&lt;p&gt;Hello, my name is Danbert&lt;/p&gt;'
+  #=&gt; '&lt;p&gt;Hello, my name is Danbert&lt;/p&gt;'
+
+  truncate '&lt;p&gt;Hello, my name is Danbert&lt;/p&gt;', :length =&gt; 15
+  #=&gt; '&lt;p&gt;Hello, my na...&lt;/p&gt;'
+
+  truncate '&lt;p&gt;Hello, my name is Danbert&lt;/p&gt;', :length =&gt; 15, :break_on_word =&gt; true
+  #=&gt; '&lt;p&gt;Hello, my...&lt;/p&gt;'
+
+  truncate '&lt;p&gt;Hello, my name is Danbert&lt;/p&gt;', :coda =&gt; link_to('More', @user)
+  #=&gt; '&lt;p&gt;Hello, my name is Danbert&lt;/p&gt;&lt;a href=&quot;/users/1&quot;&gt;More&lt;/a&gt;'
+
+  truncate '&lt;p&gt;Hello, my name is Danbert&lt;/p&gt;', :length =&gt; 15, :coda =&gt; link_to('More', @user)
+  #=&gt; '&lt;p&gt;Hello, my na...&lt;/p&gt;&lt;a href=&quot;/users/1&quot;&gt;More&lt;/a&gt;'
+</pre>
+        </div>
+      </div>
+
+
+    </div>
+
+
+  </div>
+
+
+<div id="validator-badges">
+  <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
+</div>
+
+</body>
+</html>
