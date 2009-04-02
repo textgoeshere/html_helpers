@@ -1,11 +1,11 @@
 require File.dirname(__FILE__) + '/spec_helper'
 
 require File.join(File.dirname(__FILE__), '..', 'lib', 'truncate')
-include HtmlHelper
+include HTMLHelper
 
 puts ("\n" * 15)
 
-TEST_HTML = "<div><p>hello there</p></div>"
+TEST_HTML = "<div><p>Hello there.</p>&nbsp;<p>Goodbye now!</p></div>"
 
 describe NokogiriTruncator do
   before :each do 
@@ -13,16 +13,16 @@ describe NokogiriTruncator do
   end
   
   it "should return doc unchanged when text content of doc is shorter than length" do
-    @doc.truncate(100).should eql(@doc)
+    @doc.truncate(@doc.text_length + 1).should eql(@doc)
   end
   
   it "should return well-formed html snippet with no open tags if truncating in the middle of an element" do
-    @doc.truncate(5, true).children.to_s.should eql("<div><p>hello</p></div>")
+    @doc.truncate(5, true).children.to_s.should eql("<div><p>Hello</p></div>")
   end
 end
 
 describe "HtmlHelper#truncate_html" do
-  before :all do
+  before :each do
     @html = TEST_HTML
     @doc = Nokogiri::HTML.fragment(@html)
   end
@@ -30,12 +30,20 @@ describe "HtmlHelper#truncate_html" do
   #
   #
   describe "in general" do
-    it "should accept a string of html" do
+    it "should accept a string snippet of html" do
       lambda { truncate_html(@html) }.should_not raise_error
     end
     
-    it "should accept an Nokogiri doc" do
+    it "should return a string of html when given a string snippet of html" do
+      truncate_html(@html).class.should eql(String)
+    end
+    
+    it "should accept a Nokogiri XML Nodeset" do
       lambda { truncate_html(@doc) }.should_not raise_error
+    end
+    
+    it "should return a Nokogiri XML Nodeset when given a Nokogiri XML Nodeset" do
+      truncate_html(@doc).class.should eql(Nokogiri::XML::NodeSet)
     end
     
     it "should return nil when text is nil" do
@@ -50,22 +58,21 @@ describe "HtmlHelper#truncate_html" do
   #
   #
   describe "when text is shorter than length" do
-    it "and coda is blank, should return original text unchanged" do
-      truncate_html(@doc, :coda => '').should eql(@doc)
+    it "and coda is blank, should return original snippet unchanged" do
+      truncate_html(@doc, :coda => '').to_s.should eql(@doc.children.to_s)
     end
     
     it "should insert coda at bottom of parent element" do
-      pending
       coda = "foo"
-      truncate_html(@doc, :coda => "foo").should eql("<div><p>hello there</p>#{coda}</div>")
+      truncate_html(@doc, :coda => "foo").to_s.should eql("<div><p>Hello there.</p>&nbsp;<p>Goodbye now!<p>#{coda}</div>")
     end
     
     it " - even if (text plus omission) is longer than text - should not append omission" do
-      truncate_html(@doc, :length => @doc.text_length).should eql(@doc)
+      truncate_html(@doc, :length => @doc.text_length).to_s.should eql(@doc.children.to_s)
     end
   end
   
   it "should insert omission at bottom of last child element" do
-    truncate_html(@doc, :length => @doc.text_length - 5)
+    truncate_html(@doc, :length => @doc.text_length - 5).should eql("<div><p>...</p></div>")
   end
 end

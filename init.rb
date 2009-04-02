@@ -1,2 +1,2 @@
 require 'truncate'
-ActionView::Base.send(:include, HtmlExtensions)
+ActionView::Base.send(:include, HTMLExtensions)

@@ -1,7 +1,6 @@
 # = Credits
 #
-# By Henrik Nyh <http://henrik.nyh.se> 2008-01-30.
-# Free to modify and redistribute with credit.
+# Original script by Henrik Nyh <http://henrik.nyh.se> 2008-01-30.
 #
 # Modified by Dave Nolan <http://textgoeshere.org.uk> 2008-02-06
 # - Ellipsis appended to text of last HTML node
@@ -18,14 +17,14 @@
 # - Improved compatibility with <code>ActionView::Helpers::TextHelper#truncate</code>
 # - Tweaked link, words options
 # - Fixed some ActiveSupport deprecations
+# - Changed to Nokogiri from Hpricot
 
-require "rubygems"
 gem "nokogiri"
 gem "activesupport"
 require 'nokogiri'
 require 'activesupport'
 
-module HtmlHelper
+module HTMLHelper
 
   # HTML-safe truncation.
   #
@@ -40,10 +39,11 @@ module HtmlHelper
   #
   # === Options
   # - +length+ -        Maximum total length of truncated +text+ (default: 30). 
-  # - +ommission+ -     Ellipsis, only present if +text+ has actually been truncated, inserted at bottom of the last child element (default: '...'). 
+  # - +ommission+ -     Ellipsis, only present if +text+ has actually been truncated, inserted at bottom of the last child element (default: '...').
   # - +break_on_word+ - +true+ to ensure that +text+ is truncated on a word boundary. 
   #   Note this may mean that the length of the truncated text returned is less than +length+ (default +false+)
-  # - +coda+ -          String inserted at the bottom of the parent element of truncated +text+ whether it is actually truncated or not (default: nil)          
+  # - +coda+ -          String inserted at the bottom of the parent element of truncated +text+ whether it is actually truncated or not (default: nil).
+  #   This is useful if you can rely that your fragment root element will always be the same, and you want to add, say, a "read on" link inside at the bottom.
   #
   # === Examples
   #   truncate '<p>Hello, my name is Danbert</p>' 
@@ -66,47 +66,45 @@ module HtmlHelper
     
     options = args.extract_options!
     length        = options[:length]        || 30
-    omission      = options[:omission]      || '...'
     break_on_word = options[:break_on_word] || false
+    omission      = options[:omission]      || '...'
     coda          = options[:coda]          || nil
     
-    doc = text.respond_to?(:inner_text) ? text : Nokogiri::HTML.fragment(text.to_s)
-    omission_length = Nokogiri::HTML.fragment(omission).text_length
-    text_length = doc.text_length
-    actual_length = length - omission_length
-
-    if text_length > length
-      truncated_doc = doc.truncate(actual_length)
+    already_parsed = text.respond_to?(:children)
+    doc = already_parsed ? text : Nokogiri::HTML.fragment(text.to_s)
+    
+    omission_length = omission.mb_chars.length
+    text_length     = doc.text_length
+    
+    truncate = text_length > length
+    
+    if truncate
+      actual_length = length - omission_length
+      new_doc = doc.truncate(actual_length)
       
-      if break_on_word
-        word_length = actual_length - (truncated_doc.text_length - truncated_doc.inner_html.rindex(' '))
-        truncated_doc = doc.truncate(word_length).child
-      end
-
-      last_child = truncated_doc.children.last
-      if last_child.inner_html.nil?
-        truncated_doc.inner_html + omission + coda if coda
-      else        
-        last_child.inner_html = last_child.inner_html.gsub(/\W.[^\s]+$/, "") + omission
-        last_child.inner_html += coda if coda
-        truncated_doc
-      end
-    else 
-      unless coda.blank?
-        last_child = doc.children.last
-        if last_child.inner_html.nil?
-          doc.inner_html + coda
-        else
-          last_child.inner_html = last_child.inner_html.gsub(/\W.[^\s]+$/, "") + coda
-          doc
-        end      
-      else
-        text
-      end
+      #if break_on_word
+      #  word_length = actual_length - (new_doc.text_length - new_doc.inner_html.rindex(' '))
+      #  new_doc = doc.truncate(word_length).child
+      #end
+    else
+      new_doc = doc.dup
     end
+    
+    last_child = new_doc.children.last
+    
+    unless coda.blank?
+      coda_node = Nokogiri::XML::Text.new(coda, new_doc.document)
+      new_doc.children.first << coda_node
+    end
+    
+    if truncate
+      omission_node = last_child.content.blank? ? new_doc : last_child 
+      omission_node.content = last_child.inner_html.gsub(/\W.[^\s]+$/, "") + omission
+    end
+    
+    # Return what was were passed, a String for a String, a NodeSet for a Nodeset
+    already_parsed ? new_doc.children : new_doc.children.to_s
   end
-
-
 end
 
 module NokogiriTruncator
@@ -126,6 +124,7 @@ module NokogiriTruncator
         break if remaining_length == 0
         truncated_node << node.truncate(remaining_length)
       end
+      
       truncated_node
     end
   end
