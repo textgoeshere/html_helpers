@@ -1,3 +1,7 @@
-require 'rubygems'
-gem 'rspec'
-require 'spec'
+begin
+  require 'spec'
+rescue LoadError
+  require 'rubygems'
+  require 'spec'
+end
+

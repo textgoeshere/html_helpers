@@ -3,21 +3,41 @@ require File.dirname(__FILE__) + '/spec_helper'
 require File.join(File.dirname(__FILE__), '..', 'lib', 'truncate')
 include HTMLHelper
 
-puts ("\n" * 15)
+# NOTE: Nokogiri automatically inserts line breaks which makes testing String output more fragile 
+#   because the line breaks have to be stripped or accounted for
+# TODO: remove this fragility
+class String
+  def flatten!
+    gsub(/\n/, '')
+  end
+end
 
-TEST_HTML = "<div><p>Hello there.</p>&nbsp;<p>Goodbye now!</p></div>"
+class Nokogiri::XML::NodeSet
+  def to_flat_s
+    to_s.flatten!
+  end
+end
+
+TEST_HTML="<div><p>Hello there.</p>&nbsp;<p>Goodbye now!</p></div>"
+OPTIONS = {
+    :length         => 30,
+    :break_on_work  => false,
+    :omission       => '...',
+    :coda           => nil,
+    :log            => false
+}
 
 describe NokogiriTruncator do
   before :each do 
     @doc = Nokogiri::HTML.fragment(TEST_HTML) 
   end
   
-  it "should return doc unchanged when text content of doc is shorter than length" do
-    @doc.truncate(@doc.text_length + 1).should eql(@doc)
+  it "should return doc unchanged when text content of doc is shorter than length and there's no coda" do
+    @doc.truncate(@doc.text_length + 1, OPTIONS).should eql(@doc)
   end
   
   it "should return well-formed html snippet with no open tags if truncating in the middle of an element" do
-    @doc.truncate(5, true).children.to_s.should eql("<div><p>Hello</p></div>")
+    @doc.truncate(5, OPTIONS).children.to_flat_s.should eql("<div><p>Hello...</p></div>")
   end
 end
 
@@ -59,20 +79,28 @@ describe "HtmlHelper#truncate_html" do
   #
   describe "when text is shorter than length" do
     it "and coda is blank, should return original snippet unchanged" do
-      truncate_html(@doc, :coda => '').to_s.should eql(@doc.children.to_s)
+      truncate_html(@html, :coda => '').flatten!.should eql(@html)
     end
     
-    it "should insert coda at bottom of parent element" do
+    it "should include coda if coda is not blank" do
       coda = "foo"
-      truncate_html(@doc, :coda => "foo").to_s.should eql("<div><p>Hello there.</p>&nbsp;<p>Goodbye now!<p>#{coda}</div>")
+      truncate_html(@html, :coda => coda).flatten!.should match(Regexp.new(coda))
     end
+    
+    it "should have coda "
+    
+    
     
     it " - even if (text plus omission) is longer than text - should not append omission" do
-      truncate_html(@doc, :length => @doc.text_length).to_s.should eql(@doc.children.to_s)
+      truncate_html(@html, :length => @doc.text_length).flatten!.should eql(@html)
     end
   end
   
   it "should insert omission at bottom of last child element" do
-    truncate_html(@doc, :length => @doc.text_length - 5).should eql("<div><p>...</p></div>")
+    truncate_html(@html, :length => 5, :log => true).flatten!.should eql("<div><p>He...</p></div>")
   end
+  
+  
+  
+  
 end

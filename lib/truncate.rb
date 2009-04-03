@@ -64,42 +64,27 @@ module HTMLHelper
   def truncate_html(text, *args)
     return text if text.blank?
     
-    options = args.extract_options!
-    length        = options[:length]        || 30
-    break_on_word = options[:break_on_word] || false
-    omission      = options[:omission]      || '...'
-    coda          = options[:coda]          || nil
+    options = args.extract_options!.reverse_merge({
+        :length         => 30,
+        :break_on_work  => false,
+        :omission       => '...',
+        :coda           => nil,
+        :log            => false
+    })
     
     already_parsed = text.respond_to?(:children)
     doc = already_parsed ? text : Nokogiri::HTML.fragment(text.to_s)
     
-    omission_length = omission.mb_chars.length
-    text_length     = doc.text_length
-    
-    truncate = text_length > length
-    
-    if truncate
-      actual_length = length - omission_length
-      new_doc = doc.truncate(actual_length)
-      
-      #if break_on_word
-      #  word_length = actual_length - (new_doc.text_length - new_doc.inner_html.rindex(' '))
-      #  new_doc = doc.truncate(word_length).child
-      #end
+    if doc.text_length > options[:length]
+      actual_length = options[:length] - options[:omission].mb_chars.length
+      new_doc = doc.truncate(actual_length, options)
     else
       new_doc = doc.dup
     end
     
-    last_child = new_doc.children.last
-    
-    unless coda.blank?
-      coda_node = Nokogiri::XML::Text.new(coda, new_doc.document)
-      new_doc.children.first << coda_node
-    end
-    
-    if truncate
-      omission_node = last_child.content.blank? ? new_doc : last_child 
-      omission_node.content = last_child.inner_html.gsub(/\W.[^\s]+$/, "") + omission
+    unless options[:coda].blank?
+      coda_node = Nokogiri::XML::Text.new(options[:coda], new_doc.document)
+      new_doc.children.last << coda_node
     end
     
     # Return what was were passed, a String for a String, a NodeSet for a Nodeset
@@ -113,7 +98,7 @@ module NokogiriTruncator
       self.text.mb_chars.length
     end
     
-    def truncate(length, log = false)
+    def truncate(length, options)
       return self if text_length <= length
       
       truncated_node = self.dup
@@ -121,23 +106,24 @@ module NokogiriTruncator
       
       self.children.each do |node|
         remaining_length = length - truncated_node.text_length
-        break if remaining_length == 0
-        truncated_node << node.truncate(remaining_length)
+        break if remaining_length <= 0
+        truncated_node << node.truncate(remaining_length, options)
       end
-      
       truncated_node
     end
   end
 
   module TextNode
-    def truncate(length)
-      self.content = content.mb_chars[0...length] 
+    def truncate(length, options)
+      content_length = content.mb_chars.length
+      self.content = content.mb_chars[0...length]
+      self.content += options[:omission] if content_length > length 
       self
     end  
   end
 
   module IgnoredTag
-    def truncate(length)
+    def truncate(length, options)
       self
     end
   end
